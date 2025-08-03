@@ -53,14 +53,14 @@ contract TicketingSystem {
         require(_quantity > 0, "Quantity must be at least 1");
         require(_quantity <= myEvent.ticketsAvailable, "Not enough tickets");
         require(msg.value >= _quantity * myEvent.ticketPrice, "Insufficient ETH");
-        uint256 required=_quantity * myEvent.ticketPrice;
+        uint256 required=_quantity * myEvent.ticketPrice;   //required eth
         if(msg.value>required){
-           (bool success, ) = payable(msg.sender).call{value: msg.value-required}("");
+           (bool success, ) = payable(msg.sender).call{value: msg.value-required}("");   //sending back excess eth if required
         require(success, "Withdraw failed");
         }
-        EventFunds[_eventId]+=msg.value;
-        myEvent.ticketsAvailable -= _quantity;
-        ticketsOwned[_eventId][msg.sender] += _quantity;
+        EventFunds[_eventId]+=msg.value;      //updating amount send for each event
+        myEvent.ticketsAvailable -= _quantity;  //updating number of tickets remaining
+        ticketsOwned[_eventId][msg.sender] += _quantity;  //updating the tickets of users
 
         emit TicketPurchased(_eventId, msg.sender, _quantity);
     }
@@ -70,20 +70,19 @@ contract TicketingSystem {
         require(msg.sender == myEvent.organizer, "Only organizer can withdraw");
         require(block.timestamp > myEvent.date, "Cannot withdraw before event");
 
-        uint256 balance = EventFunds[_eventId];
-        EventFunds[_eventId]=0;
-        (bool success, ) = payable(myEvent.organizer).call{value: balance}("");
+        uint256 balance = EventFunds[_eventId];  //obtaining amount of each event
+        EventFunds[_eventId]=0;  //making the amount of that event 0
+        (bool success, ) = payable(myEvent.organizer).call{value: balance}("");  //withdrawing to organizers account
         require(success, "Withdraw failed");
         emit Withdrawal(myEvent.organizer, balance);
     }
 
     function getMyTickets(uint256 _eventId) public view returns (uint256) {
-        return ticketsOwned[_eventId][msg.sender];
+        return ticketsOwned[_eventId][msg.sender];  //gives number of tickets of the sender
     }
     function review(uint256 _eventId,uint8 rating) public eventExists(_eventId){
-     //   event_rating[_eventId]=rating;
-        require(ticketsOwned[_eventId][msg.sender] > 0, "Only attendees can review");
-        require(reviews[_eventId][msg.sender]==0,"cannot review twice");
+        require(ticketsOwned[_eventId][msg.sender] > 0, "Only attendees can review"); 
+        require(reviews[_eventId][msg.sender]==0,"cannot review twice"); //restricting multple review from same user
         require(rating>0 && rating<=5,"rating must be greater than 0 and less than 5");
         require(block.timestamp>events[_eventId].date,"cannot review before event");
         reviews[_eventId][msg.sender]=rating;
@@ -93,16 +92,16 @@ contract TicketingSystem {
      function getRating(uint256 _eventId) public view returns (uint256){
         require(block.timestamp>events[_eventId].date,"cannot check review before event");
         require(numReviews[_eventId] > 0, "No reviews yet");
-        return (totalRatings[_eventId] / numReviews[_eventId]);
+        return (totalRatings[_eventId] / numReviews[_eventId]); //obtaining average rating
     }
     function refund(uint256 _eventId) public eventExists(_eventId){
         require(events[_eventId].cancelled || block.timestamp<(events[_eventId].date-(1 days)),"You must apply for refund atleast 24 hours before the event or event must be cancelled");
-        require(ticketsOwned[_eventId][msg.sender] > 0, "Only attendees can refund");
-        uint256 Refund=ticketsOwned[_eventId][msg.sender]*events[_eventId].ticketPrice;
-        EventFunds[_eventId]-=Refund;
-        events[_eventId].ticketsAvailable+=ticketsOwned[_eventId][msg.sender];
-        ticketsOwned[_eventId][msg.sender]=0;
-        (bool success, ) = payable(msg.sender).call{value: Refund}("");
+        require(ticketsOwned[_eventId][msg.sender] > 0, "Only attendees can get refund");
+        uint256 Refund=ticketsOwned[_eventId][msg.sender]*events[_eventId].ticketPrice; //calculating refund money
+        EventFunds[_eventId]-=Refund; //updating funds of the event
+        events[_eventId].ticketsAvailable+=ticketsOwned[_eventId][msg.sender]; //updating available tickets
+        ticketsOwned[_eventId][msg.sender]=0;  //updating the number of tickets owned by the sender
+        (bool success, ) = payable(msg.sender).call{value: Refund}("");  //refunding to sender's account
         require(success, "Withdraw failed");
         
         emit Refunded(_eventId,msg.sender,Refund);
