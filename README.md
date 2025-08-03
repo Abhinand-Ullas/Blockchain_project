@@ -12,4 +12,4 @@ This contract includes the following features and techniques:<br>
 ** One can view the status of the event,whether the event is cancelled,upcoming or completed<br>
 
 -Re-entrancy tests have been performed,and potential issues have been rectified.<br>
--The contract adress obtained through sepolia testnet is provided here: 0x1a883cc99126246cd5026898b1f8638208dd4ca6<br>
+-The contract address obtained through sepolia testnet is provided here: 0x1a883cc99126246cd5026898b1f8638208dd4ca6<br>
